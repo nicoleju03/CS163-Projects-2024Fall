@@ -60,15 +60,22 @@ or you can write in-text formula $$y = wx + b$$.
 ### More Markdown Syntax
 You can find more Markdown syntax at [this page](https://www.markdownguide.org/basic-syntax/).
 
+## Introduction
+Computer vision has played an increasingly large role in fashion-related problems such as the recommendation of similar clothing items, the recognition of garments, and the virtual try-on of outfits. There have been several efforts to expand on virtual try-on and employ computer vision-based editing of fashion images, which involves generating realistic fashion designs on images of models using a variety of inputs such as text prompts and sketches. Fashion image editing with computer vision can help a fashion designer efficiently visualize clothing items on any number of people without requiring their physical presence. Here, we examine three different approaches to fashion image editing:
+
+1. **Multimodal Garment Designer (MGD)**, a latent diffusion-based solution that takes a model image, its pose map, a textual description of a garment, and a sketch of the garment as the inputs and produces an image of the model wearing the target garment as the output.
+1. **Fashion Image CLIP Editing (FICE)**, a generative adversarial network-based solution that takes a model image and a textual description of a garment as the inputs and produces an image of the model wearing the target garment as the output.
+1. **Multi-Garment Virtual Try-On and Editing (M&M VTO)**, a diffusion- and transformer-based solution that takes a model image, multiple garment images, and a textual description as the inputs and produces an image of the model wearing the target garments as the output.
+
 ## Multimodal Garment Designer (MGD)
-Many existing works explore the conditioning of diffusion models on various modalities, like text descriptions and sketches, to allow for more control over image generation. $$\textbf{Multimodal Garment Designer (MGD)}$$, in particular, focuses on the fashion domain and is a human-centric architecture that builds on latent diffusion models. It is conditioned on multiple modalities: textual sentences, human pose maps, and garment sketches.
+Many existing works explore the conditioning of diffusion models on various modalities, like text descriptions and sketches, to allow for more control over image generation. **Multimodal Garment Designer (MGD)**, in particular, focuses on the fashion domain and is a human-centric architecture that builds on latent diffusion models. It is conditioned on multiple modalities: textual sentences, human pose maps, and garment sketches.
 
 Given an input image $$I \in \mathbb{R}^{H \times W \times 3}$$, MGD’s goal is to generate a new image $$I$$' of the same dimensions that retains the input model’s information, while replacing the existent garment with a target garment.
 
 
 
 ### Stable Diffusion Model
-MGD builds off of the $$\textbf{Stable Diffusion Model}$$, which is a latent diffusion model that involves an encoder $$E$$ to convert the image $$I$$ into a latent space of dimension $$\frac{H}{8} \times \frac{W}{8} \times 4$$, and a decoder $$D$$ that converts back into the image space. It uses a CLIP-based text encoder $$T_E$$, which takes input $$Y$$, and a text-time-conditional U-Net denoising model $$\epsilon_{\theta}$$. The denoising network $$\epsilon_{\theta}$$ minimizes the loss:
+MGD builds off of the **Stable Diffusion Model**, which is a latent diffusion model that involves an encoder $$E$$ to convert the image $$I$$ into a latent space of dimension $$\frac{H}{8} \times \frac{W}{8} \times 4$$, and a decoder $$D$$ that converts back into the image space. It uses a CLIP-based text encoder $$T_E$$, which takes input $$Y$$, and a text-time-conditional U-Net denoising model $$\epsilon_{\theta}$$. The denoising network $$\epsilon_{\theta}$$ minimizes the loss:
 
 $$
 L = \mathbb{E}_{\epsilon(1), Y, \epsilon \sim 𝒩(0,1), t} \left[ \left\| \epsilon - \epsilon_0(\gamma, \psi) \right\|\ _2^2 \right]
@@ -91,7 +98,7 @@ $$
 where $$z_t$$ is the convolutional input, $$m$$ is the binary inpainting mask, $$E(I_M)$$ is the encoded masked image, and $$p$$ and $$s$$ are resized versions of $$P$$ and $$S$$ to match the latent dimensions.
 
 ### Training
-$$\textbf{Classifier-free guidance}$$ is used during the training process, meaning the denoising network is trained to work both with a condition and without any condition. This process aims to slowly move the unconditional model toward the conditional model by modifying its predicted noise. Since MGD uses multiple conditions, it computes the direction using joint probability of all conditions. We also use $$\textbf{unconditional training}$$, where we replace one or more of the conditions with a null value according to a set probability. This improves model versatility, as it must learn to produce results when certain conditions are taken away. 
+**Classifier-free guidance** is used during the training process, meaning the denoising network is trained to work both with a condition and without any condition. This process aims to slowly move the unconditional model toward the conditional model by modifying its predicted noise. Since MGD uses multiple conditions, it computes the direction using joint probability of all conditions. We also use **unconditional training**, where we replace one or more of the conditions with a null value according to a set probability. This improves model versatility, as it must learn to produce results when certain conditions are taken away. 
 
 ### Evaluation and Metrics
 Many different metrics can be used to assess the performance of MGD. Fréchet Inception Distance (FID) and Kernel Inception Distance (KID) measure the differences between real and generated images, and thus help represent the realism and quality of images. The CLIP Score (CLIP-S) captures the adherence of the image to the textual input. MGD also uses novel metrics: pose distance (PD), which compares the human pose of the original image to the generated one, and sketch distance (SD) which reflects how closely the generated image adheres to the sketch constraint. 
