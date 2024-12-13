@@ -83,7 +83,7 @@ $$
 
 where $$t$$ is the time step, $$\gamma$$ is the spatial input to the denoising network, $$\psi = \begin{bmatrix} t; T_E(Y) \end{bmatrix}$$, and $$\epsilon \sim 𝒩(0, 1)$$ is the Gaussian noise added to the encoded image.
 
-The Stable Diffusion Model is a state-of-the art text-to-image model widely known for its ability to generate high-quality, realistic images from textual descriptions. MGD broadens its scope to focus on human-centric fashion image editing, maintaining the body information of the input model while also incorporating an input sketch.
+The Stable Diffusion Model is a state-of-the-art text-to-image model widely known for its ability to generate high-quality, realistic images from textual descriptions. MGD broadens its scope to focus on human-centric fashion image editing, maintaining the body information of the input model while also incorporating an input sketch.
 
 ### Conditioning Constraints
 Instead of employing a standard text-to-image model, we also need to perform inpainting to replace the input model’s garment using the multimodal inputs. The denoising network input is concatenated with an encoded mask image and binary inpainting mask. Because the encoder and decoder are fully convolutional, the model can preserve spatial information in the latent space; thus, we can add constraints to the generation process, in addition to the textual information. 
@@ -103,19 +103,60 @@ where $$z_t$$ is the convolutional input, $$m$$ is the binary inpainting mask, $
 ### Evaluation and Metrics
 Many different metrics can be used to assess the performance of MGD. Fréchet Inception Distance (FID) and Kernel Inception Distance (KID) measure the differences between real and generated images, and thus help represent the realism and quality of images. The CLIP Score (CLIP-S) captures the adherence of the image to the textual input. MGD also uses novel metrics: pose distance (PD), which compares the human pose of the original image to the generated one, and sketch distance (SD) which reflects how closely the generated image adheres to the sketch constraint. 
 
-#### Comparison with Other Methods
+## Text-Conditioned Image Editing with Guided GAN Inversion (FICE)
+Fashion Image CLIP Editing (FICE) also relies on text descriptions, as opposed to the traditional method of overlaying clothing images onto a target person, to enable broader creativity through natural language. FICE builds on the standard GAN inversion framework and the pre-trained CLIP model using semantic, pose-related, and image-level constraints. 
+
+Given a fashion image $$I \in \mathbb{R}^{3 \times n \times n}$$ and some corresponding text description about the image $$t$$, FICE synthesizes an output image $$I_f \in \mathbb{R}^{3 \times n \times n}$$ that adheres as closely as possible to the semantics described in $$t$$.
+
+### Generative Adversarial Network (GAN) Inversion
+A **Generative Adversarial Network (GAN)** is a machine learning model that uses a generator and discriminator to generate data. GAN **inversion** projects a target image into the GAN's image generation space. FICE uses constrained GAN inversion over the latent space of pre-trained a *StyleGAN* model. This model eliminates artifacts and stabilizes the training process to incorporate the semantics conveyed by the input text description into the generated image. 
+
+FICE tailors its GAN inversion to fashion images by enforcing constraints like pose preservation, semantic alignment, and image stitching. 
+
+### FICE Methodology
+Given an input image, FICE initializes a latent code using the GAN inversion encoder. Dense-pose and segmentation maps are then computed for body structure and regions of interest. The initial latent code is iteratively optimized to align the synthesized image with the text. This creates latent code:
+
+$$
+w^* = arg_wmin \{L(I,G(w),t)\}
+$$
+
+where $$w^*$$ is the optimized latent code, $$L$$ is the loss, $$I$$ is the original  image, $$G(w)$$ is the GAN generator output, and $$t$$ is the text description.
+
+Finally, the optimized GAN image $$I_g^*$$ is combined with the original image $$I$$ via stitching to ensure identity preservation and generate output image $$I_f$$.
+
+![FICEModel]({{ '/assets/images/30/FICEModel.png' | relative_url }})
+{: style="width: 800px; max-width: 100%;"}
+*Fig INSERT. FICE Editing Model: Overview with optimizations enforcing semantic content, pose preservation, image consistency, and latent code regularization.* [INSERT].
+
+### Datasets
+FICE used **VITON**, a fashion dataset with training and test sets, to train the **StyleGAN** generator and encoder and evaluate performance. DeepFashion, another dataset, trains the segmentation model. The segmentation masks are divided into body, face and hair, and background; the masks are then padded and downscaled to the ideal resolution. **Fashion-Gen**, a dataset with image and text descriptions, provided a source of clothing descriptions necessary for testing.
+
+### Evaluation and Metrics
+FICE can edit clothing styles while preserving poses and generating realistic textures without 3D models. It excels at preserving image identity and avoiding entanglement issues. Removing any loss terms—pose preservation, image composition, or latent-code regularization—negatively impacts key metrics and is, therefore, important for high-quality results.
+
+![FICEResults]({{ '/assets/images/30/FICEResults.png' | relative_url }})
+{: style="width: 400px; max-width: 100%;"}
+*Fig INSERT. Results generated by FICE with various text input* [INSERT].
+
+However, a disadvantage of the FICE model is the inherited constraints of CLIP. FICE is limited to 76 tokens and thus has a maximum length of text descriptions from the byte-pair encoding technique. FICE's gradient optimization also creates slower processing speeds. Fine tuning CLIP on larger datasets can mitigate some of these problems and reduce semantic issues.
+
+## Method Comparisons
 
 ![Results]({{ '/assets/images/30/MGD_Results.png' | relative_url }})
 {: style="width: 800px; max-width: 100%;"}
 *Fig INSERT. Comparison of results on the Dress Code Multimodal and VITON-HD Multimodal datasets* [INSERT].
 
+FICE and MGD had identical modalities as MGD retrained all the main components of FICE on newly collected datasets. However, MGD far outperformed FICE in terms of realism and coherency. FICE can produce images consistent with text conditioning, though the images are less realistic than models like MGD.  
+
 MGD was tested for paired and unpaired settings; in the paired settings, the conditions refer to the garment the model is wearing, while in the unpaired settings, the target garment differs from the worn one. The results on the Dress Code Multimodal and VITON-HD Multimodal datasets outperform competitors in both realism and adherence to the inputs (text, pose map, garment sketch). It produces much lower FID and KID scores compared to other models, slightly higher CLIP scores, and lower PD and SD scores due to the pose map and garment sketch conditioning. Stable Diffusion produces realistic results but fails to preserve the model’s pose information because such data is not included in the inputs to the model.
 
 
 
-## Reference
-Please make sure to cite properly in your work, for example:
+## References
 
-[1] Redmon, Joseph, et al. "You only look once: Unified, real-time object detection." *Proceedings of the IEEE conference on computer vision and pattern recognition*. 2016.
+[1] Baldrati, Alberto, et al. "Multimodal Garment Designer:
+Human-Centric Latent Diffusion Models for Fashion Image Editing." *Proceedings of the IEEE/CVF International Conference on Computer Vision.* 2023.
+
+[2] Pernuš, Martin, et al. "FICE: Text-Conditioned Fashion Image Editing With Guided GAN Inversion." *ArXiv abs/2301.02110* 2023, http://arxiv.org/abs/2304.02051.
 
 ---
