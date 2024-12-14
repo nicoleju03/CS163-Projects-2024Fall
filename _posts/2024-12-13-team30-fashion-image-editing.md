@@ -3,62 +3,17 @@ layout: post
 comments: true
 title: Fashion Image Editing
 author: Antara Chugh, Joy Cheng, Caroline DebBaruah, & Nicole Ju
-date: 2024-12-11
+date: 2024-12-13
 ---
 
 
-> This block is a brief introduction of your project. You can put your abstract here or any headers you want the readers to know.
+> Fashion image editing involves modifying model images with specific target garments. We examine various approaches to fashion image editing based on latent diffusion, generative adversarial networks, and transformers.
 
 
 <!--more-->
 {: class="table-of-content"}
 * TOC
 {:toc}
-
-## Main Content
-Your survey starts here. You can refer to the [source code](https://github.com/lilianweng/lil-log/tree/master/_posts) of [lil's blogs](https://lilianweng.github.io/lil-log/) for article structure ideas or Markdown syntax. We've provided a [sample post](https://ucladeepvision.github.io/CS188-Projects-2022Winter/2017/06/21/an-overview-of-deep-learning.html) from Lilian Weng and you can find the source code [here](https://raw.githubusercontent.com/UCLAdeepvision/CS188-Projects-2022Winter/main/_posts/2017-06-21-an-overview-of-deep-learning.md)
-
-## Basic Syntax
-### Image
-Please create a folder with the name of your team id under /assets/images/, put all your images into the folder and reference the images in your main content.
-
-You can add an image to your survey like this:
-![YOLO]({{ '/assets/images/UCLAdeepvision/object_detection.png' | relative_url }})
-{: style="width: 400px; max-width: 100%;"}
-*Fig 1. YOLO: An object detection method in computer vision* [1].
-
-Please cite the image if it is taken from other people's work.
-
-
-### Table
-Here is an example for creating tables, including alignment syntax.
-
-|             | column 1    |  column 2     |
-| :---        |    :----:   |          ---: |
-| row1        | Text        | Text          |
-| row2        | Text        | Text          |
-
-
-
-### Code Block
-```
-# This is a sample code block
-import torch
-print (torch.__version__)
-```
-
-
-### Formula
-Please use latex to generate formulas, such as:
-
-$$
-\tilde{\mathbf{z}}^{(t)}_i = \frac{\alpha \tilde{\mathbf{z}}^{(t-1)}_i + (1-\alpha) \mathbf{z}_i}{1-\alpha^t}
-$$
-
-or you can write in-text formula $$y = wx + b$$.
-
-### More Markdown Syntax
-You can find more Markdown syntax at [this page](https://www.markdownguide.org/basic-syntax/).
 
 ## Introduction
 Computer vision has played an increasingly large role in fashion-related problems such as the recommendation of similar clothing items, the recognition of garments, and the virtual try-on of outfits. There have been several efforts to expand on virtual try-on and employ computer vision-based editing of fashion images, which involves generating realistic fashion designs on images of models using a variety of inputs such as text prompts and sketches. Fashion image editing with computer vision can help a fashion designer efficiently visualize clothing items on any number of people without requiring their physical presence. Here, we examine three different approaches to fashion image editing:
@@ -140,10 +95,10 @@ FICE can edit clothing styles while preserving poses and generating realistic te
 
 However, a disadvantage of the FICE model is the inherited constraints of CLIP. FICE is limited to 76 tokens and thus has a maximum length of text descriptions from the byte-pair encoding technique. FICE's gradient optimization also creates slower processing speeds. Fine tuning CLIP on larger datasets can mitigate some of these problems and reduce semantic issues.
 
-## Multi Garment Virtual Try On (M&M VTO)
+## Multi-Garment Virtual Try-On (M&M VTO)
 The M&M VTO (multi garment virtual try on and editing) model leverages a UNet Diffusion Transformer to take an image of a person along with multiple garments to output a visualization of how the garments would look on the person. In addition, the model supports conditioning of the output, allowing users to make slight adjustments of the output image – for example, users can pass prompts such as “rolling up the sleeves” or “tuck in the shirt” to edit the output. Typically, virtual try on models, like the models outlined above, consider the target outfit as one garment. This model separates garments by top and bottom garments, formulating the problem to be to impose two different garments on a human. This allows for more mixing, matching, and editing of layouts. Further, the model attempts to solve problems in VTO (Virtual Try On) of preserving small, yet important, details of garments, and preserving the identity of the human image input without leaking the original garments to the final result. Previous methods use diffusion based models to solve the former problem, using noising to prevent leaking of original garments, however, these solutions are often memory heavy and also can remove important human identity information. The model attempts to additionally solve these problems through its architecture and training methods. 
 
-## Methodology 
+### Methodology 
 The model first uses a single stage diffusion model to synthesize the 1024x512 image inputs, opting to not perform extra super resolution (SR) stages as is common in many state of the art image generation models. Super resolution stages involve the model producing low resolution images first, and then using super resolution models to upscale the image. However, the authors found that the base low resolution model resulted in excess downsampling on the input image, losing important information and garment details in the process. Instead, they designed a progressive training strategy where the model first produces low resolution images, and then the same model progressively works to produce higher resolution images throughout training. This allows the model to leverage what it has learned about the data at lower resolutions and add to it as it attempts to produce higher resolution images. 
 
 The model then tries to solve the problem of human identity loss and clothing leakage through finetuning the person features only, rather than finetuning the entire model during post processing.  To do this, the authors designed the UNet Diffusion Transformer to isolate the encoding of person features from the denoising process using the “stop gradient”.
@@ -152,14 +107,14 @@ Finally, the authors created text based labels representing various garment layo
 
 In sum, a forward process takes the input image and adds noise. A UNet model then encodes the noised image, encodes the top garment, bottom garment, and person’s key features in the DiT transformer. It then decodes the output to remove noise and produce the denoised image. 
 
-## Data
+### Data
 The model uses training pairs, consisting of a person image and a garment image. The garment image can either be an image of a garment on a flat surface or a garment on a person. Then, garment embeddings for the upper, lower, and full garments are computed and matched/mapped to the garments in the person image. Any embedding that was not matched is set to 0. 
 
 Further, the person image and garment image are extracted for their 2D pose keypoints, and a layout input (text prompt) represents the desired attributes of the garment. Additionally, a clothing agnostic RGB image is generated, to provide a neutral template of the person. These inputs are known as “ctyron”.
 
 The model is trained on a “garment paired” dataset of 17 million samples, where each sample consists of two images of the same garment in two different poses/body shapes. Additionally, it is trained on a “layflat paired” dataset of 1.8 million samples, where each sample consists of an image with a garment laid out on a flat surface and an image of a person wearing the garment.
 
-## Architecture
+### Architecture
 The UDiT network can be described as the following, where t is the diffusion timestep, zt is the noisy image corrupted from ground truth x0, and ^x0 is the predicted clean image at timestep t. 
 ![Equation]({{ '/assets/images/30/MMequation.png' | relative_url }})
 {: style="width: 800px; max-width: 100%;"}
@@ -173,11 +128,11 @@ The UDiT network can be described as the following, where t is the diffusion tim
 *Fig INSERT. Diagram of model architecture* 
  [INSERT].
 
-## Evaluation and Metrics 
+### Evaluation and Metrics 
 The model was compared with TryOnDiffusion and GP-VTON model on two test sets. M&M VTO outperformed these models in FID (frechet inception distance)  and KID (Kernel Inception Distance). In a user study where 16 non-experts evaluated the results, experts preferred M&M VTO 78% of the time over TryOnDiffusion and 55% of the time over both GP-VTON and TryOnDiffusion. 
 
 
-## Method Comparisons
+## Comparison of Methods
 
 ![Results]({{ '/assets/images/30/MGD_Results.png' | relative_url }})
 {: style="width: 800px; max-width: 100%;"}
