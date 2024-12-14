@@ -140,6 +140,43 @@ FICE can edit clothing styles while preserving poses and generating realistic te
 
 However, a disadvantage of the FICE model is the inherited constraints of CLIP. FICE is limited to 76 tokens and thus has a maximum length of text descriptions from the byte-pair encoding technique. FICE's gradient optimization also creates slower processing speeds. Fine tuning CLIP on larger datasets can mitigate some of these problems and reduce semantic issues.
 
+## Multi Garment Virtual Try On (M&M VTO)
+The M&M VTO (multi garment virtual try on and editing) model leverages a UNet Diffusion Transformer to take an image of a person along with multiple garments to output a visualization of how the garments would look on the person. In addition, the model supports conditioning of the output, allowing users to make slight adjustments of the output image – for example, users can pass prompts such as “rolling up the sleeves” or “tuck in the shirt” to edit the output. Typically, virtual try on models, like the models outlined above, consider the target outfit as one garment. This model separates garments by top and bottom garments, formulating the problem to be to impose two different garments on a human. This allows for more mixing, matching, and editing of layouts. Further, the model attempts to solve problems in VTO (Virtual Try On) of preserving small, yet important, details of garments, and preserving the identity of the human image input without leaking the original garments to the final result. Previous methods use diffusion based models to solve the former problem, using noising to prevent leaking of original garments, however, these solutions are often memory heavy and also can remove important human identity information. The model attempts to additionally solve these problems through its architecture and training methods. 
+
+## Methodology 
+The model first uses a single stage diffusion model to synthesize the 1024x512 image inputs, opting to not perform extra super resolution (SR) stages as is common in many state of the art image generation models. Super resolution stages involve the model producing low resolution images first, and then using super resolution models to upscale the image. However, the authors found that the base low resolution model resulted in excess downsampling on the input image, losing important information and garment details in the process. Instead, they designed a progressive training strategy where the model first produces low resolution images, and then the same model progressively works to produce higher resolution images throughout training. This allows the model to leverage what it has learned about the data at lower resolutions and add to it as it attempts to produce higher resolution images. 
+
+The model then tries to solve the problem of human identity loss and clothing leakage through finetuning the person features only, rather than finetuning the entire model during post processing.  To do this, the authors designed the UNet Diffusion Transformer to isolate the encoding of person features from the denoising process using the “stop gradient”.
+
+Finally, the authors created text based labels representing various garment layout attributes, like rolled sleeves, tucked in shirt, open jacket. To extract these attributes, the authors decided to formulate the problem as an image captioning task – they finetuned a PaLI-3 model using 1.5k labeled images to caption the image based on its attributes.
+
+In sum, a diffusion model takes the input image and adds noise. A UNet model then encodes the image, encodes the top garment, bottom garment, and person’s key features in the DiT transformer. It then decodes the output to remove noise and produce the denoised image. 
+
+## Data
+The model uses training pairs, consisting of a person image and a garment image. The garment image can either be an image of a garment on a flat surface or a garment on a person. Then, garment embeddings for the upper, lower, and full garments are computed and matched/mapped to the garments in the person image. Any embedding that was not matched is set to 0. 
+
+Further, the person image and garment image are extracted for their 2D pose keypoints, and a layout input (text prompt) represents the desired attributes of the garment. Additionally, a clothing agnostic RGB image is generated, to provide a neutral template of the person. These inputs are known as “ctyron”.
+
+The model is trained on a “garment paired” dataset of 17 million samples, where each sample consists of two images of the same garment in two different poses/body shapes. Additionally, it is trained on a “layflat paired” dataset of 1.8 million samples, where each sample consists of an image with a garment laid out on a flat surface and an image of a person wearing the garment.
+
+## Architecture
+The UDiT network can be described as the following, where t is the diffusion timestep, zt is the noisy image corrupted from ground truth x0, and ^x0 is the predicted clean image at timestep t. 
+![Equation]({{ '/assets/images/30/MMequation.png' | relative_url }})
+{: style="width: 800px; max-width: 100%;"}
+*Fig INSERT. Description of the UDiT network* 
+ [INSERT].
+
+ The DiT blocks process the lower resolution feature maps for attention operations to learn, and the person image encodings are introduced in this stage. Below is a diagram of the architecture:
+
+![Model]({{ '/assets/images/30/MMmodelarchitecture.png' | relative_url }})
+{: style="width: 800px; max-width: 100%;"}
+*Fig INSERT. Diagram of model architecture* 
+ [INSERT].
+
+## Evaluation and Metrics 
+The model was compared with TryOnDiffusion and GP-VTON model on two test sets. M&M VTO outperformed these models in FID (frechet inception distance)  and KID (Kernel Inception Distance). In a user study where 16 non-experts evaluated the results, experts preferred M&M VTO 78% of the time over TryOnDiffusion and 55% of the time over both GP-VTON and TryOnDiffusion. 
+
+
 ## Method Comparisons
 
 ![Results]({{ '/assets/images/30/MGD_Results.png' | relative_url }})
@@ -158,5 +195,7 @@ MGD was tested for paired and unpaired settings; in the paired settings, the con
 Human-Centric Latent Diffusion Models for Fashion Image Editing." *Proceedings of the IEEE/CVF International Conference on Computer Vision.* 2023.
 
 [2] Pernuš, Martin, et al. "FICE: Text-Conditioned Fashion Image Editing With Guided GAN Inversion." *ArXiv abs/2301.02110* 2023, http://arxiv.org/abs/2304.02051.
+
+[3] Zhu, Luyang, et al. “M&M VTO: Multi-Garment Virtual Try-on and Editing.” ArXiv.org, 2024, arxiv.org/abs/2406.04542.
 
 ---
