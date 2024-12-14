@@ -147,7 +147,16 @@ The UDiT network can be described as the following, where t is the diffusion tim
 ### Evaluation and Metrics 
 The model was compared with TryOnDiffusion and GP-VTON model on two test sets. M&M VTO outperformed these models in FID (frechet inception distance)  and KID (Kernel Inception Distance). In a user study where 16 non-experts evaluated the results, experts preferred M&M VTO 78% of the time over TryOnDiffusion and 55% of the time over both GP-VTON and TryOnDiffusion. 
 
+## Conclusion
+MGD, FICE, and M&M VTO approach fashion image editing in three different ways, each achieving impressive results.
 
+MGD uses a latent diffusion-based model with multimodal inputs (pose maps, textual descriptions, and sketches) to visualize garments on model images. The approach involves inpainting with pose and sketch conditioning, and the model is trained with classifier-free guidance. MGD outperforms competitors in realism and adherence to inputs.
+
+FICE uses a GAN inversion-based model with CLIP for text-conditioned image editing. FICE preserves pose and image characteristics using semantic and image-level constraints. It produces realistic images but is less consistent than MGD, and is also limited by CLIP's short maximum token length.
+
+Finally, M&M VTO is a diffusion transformer that uses garment images and text prompts for high-resolution virtual try-ons. It allows for mixing and matching of multiple garments on models and preserves person identity by solely fine-tuning person features during post-processing. M&M VTO outperforms competitors in realism and user preferences.
+
+Fashion designers may choose to use any of these models depending on their workflow and preferences. Computer vision is truly beginning to shape the future of fashion design!
 
 ## References
 
