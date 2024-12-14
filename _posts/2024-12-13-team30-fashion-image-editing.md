@@ -150,7 +150,7 @@ The model then tries to solve the problem of human identity loss and clothing le
 
 Finally, the authors created text based labels representing various garment layout attributes, like rolled sleeves, tucked in shirt, open jacket. To extract these attributes, the authors decided to formulate the problem as an image captioning task – they finetuned a PaLI-3 model using 1.5k labeled images to caption the image based on its attributes.
 
-In sum, a diffusion model takes the input image and adds noise. A UNet model then encodes the image, encodes the top garment, bottom garment, and person’s key features in the DiT transformer. It then decodes the output to remove noise and produce the denoised image. 
+In sum, a forward process takes the input image and adds noise. A UNet model then encodes the noised image, encodes the top garment, bottom garment, and person’s key features in the DiT transformer. It then decodes the output to remove noise and produce the denoised image. 
 
 ## Data
 The model uses training pairs, consisting of a person image and a garment image. The garment image can either be an image of a garment on a flat surface or a garment on a person. Then, garment embeddings for the upper, lower, and full garments are computed and matched/mapped to the garments in the person image. Any embedding that was not matched is set to 0. 
